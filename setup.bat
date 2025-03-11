@@ -1,14 +1,6 @@
 @echo off
 setlocal EnableDelayedExpansion
 
-:: Administrator check
-net session >nul 2>&1
-if %errorlevel% neq 0 (
-    echo Requesting Administrator privileges...
-    powershell -Command "Start-Process '%~f0' -Verb runAs"
-    exit /b
-)
-
 set /a total_steps=6
 set /a current_step=0
 set "ESC="
@@ -96,11 +88,6 @@ call :update_progress
 call :update_status "Creating application shortcut..."
 (
     echo @echo off
-    echo net session ^>nul 2^>^&1
-    echo if %%errorlevel%% neq 0 (
-    echo     echo Requesting Administrator privileges...
-    echo     powershell -Command "Start-Process '%%~f0' -Verb runAs"
-    echo )
     echo python "%%~dp0stanibogat.py"
     echo pause
 ) > "СтанИИ Богат v.10.bat"

@@ -239,7 +239,7 @@ D) [Верен отговор]
         messages=[{"role": "user", "content": заявка}],
         options={
                 'temperature': max(0.05, 0.1 - (random.random()*0.15)),
-                'num_predict': 128,
+                'num_predict': 100,
                 'top_k': 30,
                 'top_p': 0.4,
                 'repeat_penalty': 1.0,
@@ -554,10 +554,10 @@ if __name__ == "__main__":
             time.sleep(2)
         
         elif избор == 'C':
-            print_centered("\nНастройки:")
-            print_centered("[M] Включи звук")
-            print_centered("[N] Изключи звук")
-            print_centered("[Друг клавиш] Назад")
+            print("\nНастройки:")
+            print("[M] Включи звук")
+            print("[N] Изключи звук")
+            print("[Друг клавиш] Назад")
             sub_choice = input("Избор: ").strip().upper()
             
             if sub_choice == 'M':

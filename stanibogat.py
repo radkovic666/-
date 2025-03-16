@@ -26,44 +26,36 @@ except:
     from nltk.corpus import wordnet
 
 SOUND_TOGGLE_FILE = "sound_config.json"
-FORCE_NETWORK_OFF = False  # Add this global flag
+FORCE_NETWORK_OFF = False
 QUESTION_HISTORY_FILE = "question_history.json"
 QUESTIONS_FILE = "questions.json"
 FACT_CHECK_CACHE = {}
 
 def load_history():
     try:
-        with open(QUESTION_HISTORY_FILE, "r", encoding="utf-8") as f:  # Add encoding
+        with open(QUESTION_HISTORY_FILE, "r", encoding="utf-8") as f:
             return set(json.load(f))
-    except FileNotFoundError:
-        #print(f"History file '{QUESTION_HISTORY_FILE}' not found. Creating a new one.")
-        return set()
-    except json.JSONDecodeError:
-        #print(f"History file '{QUESTION_HISTORY_FILE}' contains invalid JSON. Starting with an empty history.")
+    except (FileNotFoundError, json.JSONDecodeError):
         return set()
 
 QUESTION_HISTORY = load_history()
 
 def save_history():
-    with open(QUESTION_HISTORY_FILE, "w", encoding="utf-8") as f:  # Add encoding
-        json.dump(list(QUESTION_HISTORY), f, ensure_ascii=False)  # Ensure non-ASCII characters are preserved
+    with open(QUESTION_HISTORY_FILE, "w", encoding="utf-8") as f:
+        json.dump(list(QUESTION_HISTORY), f, ensure_ascii=False)
 
 def load_generated_questions():
     try:
         with open(QUESTIONS_FILE, "r", encoding="utf-8") as f:
             return json.load(f)
-    except FileNotFoundError:
-        print(f"Questions file '{QUESTIONS_FILE}' not found. Creating a new one.")
-        return []
-    except json.JSONDecodeError:
-        print(f"Questions file '{QUESTIONS_FILE}' contains invalid JSON. Starting with an empty list.")
+    except (FileNotFoundError, json.JSONDecodeError):
         return []
 
 GENERATED_QUESTIONS = load_generated_questions()
 
 def save_generated_questions():
     with open(QUESTIONS_FILE, "w", encoding="utf-8") as f:
-        json.dump(GENERATED_QUESTIONS, f, ensure_ascii=False, indent=2)  # Preserve non-ASCII characters
+        json.dump(GENERATED_QUESTIONS, f, ensure_ascii=False, indent=2)
 
 # Game Constants
 НАГРАДИ = [
@@ -146,7 +138,6 @@ def check_internet():
     except OSError:
         return False
 
-
 def говори(текст):
     global USE_TTS
     
@@ -169,7 +160,6 @@ def говори(текст):
             time.sleep(0.1)
             
     except Exception as e:
-        print(f"Режим без звук: {текст}")
         USE_TTS = False
 
 def load_sound_config():
@@ -240,8 +230,8 @@ D) [Верен отговор]
         options={
                 'temperature': max(0.05, 0.1 - (random.random()*0.15)),
                 'num_predict': 100,
-                'top_k': 30,
-                'top_p': 0.4,
+                'top_k': 20,
+                'top_p': 0.3,
                 'repeat_penalty': 1.0,
                 'seed': int(time.time()*1000) % 100000
         }
@@ -311,7 +301,7 @@ def validate_question(q_data):
 
 def предварителни_въпроси():
     shuffled_categories = random.sample(КАТЕГОРИИ, len(КАТЕГОРИИ))
-    backup_cats = КАТЕГОРИИ * 2  # Double the category options
+    backup_cats = КАТЕГОРИИ * 2
     used_combinations = set()
 
     print_centered("\nНастанете се удобно, играта ще започне всеки момент...")
@@ -321,36 +311,31 @@ def предварителни_въпроси():
         question_generated = False
         attempts = 0
         
-        while not question_generated and attempts < 50:  # Increased max attempts
-            # Rotate through categories first
+        while not question_generated and attempts < 50:
             if attempts < len(shuffled_categories) * 2:
                 current_category = shuffled_categories[(i + attempts) % len(shuffled_categories)]
-            else:  # Fallback to random categories
+            else:
                 current_category = random.choice(backup_cats)
             
-            # Skip already tried combinations
             if (current_category, трудност) in used_combinations:
                 attempts += 1
                 continue
                 
             used_combinations.add((current_category, трудност))
             
-            # Try harder if needed
-            for gen_attempt in range(10):  # Increased generation attempts
+            for gen_attempt in range(10):
                 въпрос = генерирай_въпрос(трудност, current_category)
                 if въпрос and validate_question(въпрос):
                     въпрос['награда'] = награда
-                    progress = (i + 1) / len(НАГРАДИ)
                     yield въпрос
                     question_generated = True
                     break
                 else:
-                    # Try alternative difficulty interpretation
                     alt_tрудност = random.choice(list(НИВА_НА_ТРУДНОСТ.values()))
                     въпрос = генерирай_въпрос(alt_tрудност, current_category)
                     if въпрос and validate_question(въпрос):
                         въпрос['награда'] = награда
-                        въпрос['трудност'] = трудност  # Keep original difficulty label
+                        въпрос['трудност'] = трудност
                         yield въпрос
                         question_generated = True
                         break
@@ -358,7 +343,6 @@ def предварителни_въпроси():
             attempts += 1
             
         if not question_generated:
-            print(f"Предупреждение: Пропускане на въпрос за {награда} след {attempts} опита")
             continue
 
     print()
@@ -385,25 +369,18 @@ def използвай_помощник(налични_помощници, ве�
                 за_премахване = грешни[:2]
                 for к in за_премахване:
                     del отговори[к]
-                print("Избрахте жокер 50:50")
-                for к, т in отговори.items():
-                    print(f"{к}) {т}")
-                говори("Избрахте жокер 50 на 50, а отговорите които остават са: ")
+                говори("Избрахте жокер петдесет на петдесет. Оставащите отговори са: ")
                 for к, т in отговори.items():
                     bg_letter = LATIN_TO_BG_SPEECH.get(к, к)
                     говори(f"{bg_letter}) {т}")
                 return
                 
             elif използван == "Обади се на приятел":
-                print("Избрахте жокер - Обади се на приятел.")
-                говори("Избрахте жокер - oбади се на приятел.")
                 bg_letter = LATIN_TO_BG_SPEECH.get(верен_отговор, верен_отговор)
                 print(f"\nМисля, че верният отговор е {отговори[верен_отговор]}")
                 говори(f"Вашият приятел предложи {bg_letter} като верен отговор")
 
             elif използван == "Помощ от публиката":
-                print("Избрахте жокер - Помощ от публиката.")
-                говори("Избрахте жокер - Помощ от публиката.")
                 difficulty_probs = {
                     "основно ниво": 90, "контекстуално разбиране": 68, "междинно аналитично": 59,
                     "комплексни връзки": 42, "специфична експертиза": 35, "критичен анализ": 28,
@@ -411,19 +388,13 @@ def използвай_помощник(налични_помощници, ве�
                 }
                 
                 base_prob = difficulty_probs.get(трудност, 50)
-                
                 remaining = 100 - base_prob
                 wrong_answers = [k for k in отговори if k != верен_отговор]
                 
-                if not wrong_answers:
-                    print(f"Публиката 100% подкрепя {верен_отговор}) {отговори[верен_отговор]}")
-                    говори(f"Публиката смята, че {LATIN_TO_BG_SPEECH.get(верен_отговор, верен_отговор)} е верен отговор със 100% увереност.")
-                    continue
-                
+                percentages = {верен_отговор: base_prob}
                 weights = [random.random() for _ in wrong_answers]
                 total_weight = sum(weights) or 1
                 
-                percentages = {верен_отговор: base_prob}
                 for i, key in enumerate(wrong_answers):
                     percentages[key] = round((weights[i]/total_weight) * remaining, 1)
                 
@@ -443,37 +414,99 @@ def използвай_помощник(налични_помощници, ве�
                     if key in отговори and key in percentages:
                         bg_letter = LATIN_TO_BG_SPEECH.get(key, key)
                         говори(f"{bg_letter}) {percentages[key]} процента")
-            time.sleep(2)
+            print("\nИграта ще продължи след секунди...")
+            time.sleep(3)    
             break
         else:
-            print(f"/nНевалиден избор, опитайте отново.")
+            print(f"Невалиден избор, опитайте отново.")
 
-def display_question(въпрос, текуща_награда, отговори, speak):
+def display_question(въпрос, текуща_награда, отговори, speak=True):
+    # Load the frame template
+    with open('frame.txt', 'r', encoding='utf-8') as f:
+        frame = [line.rstrip('\n') for line in f]
+
+    # Display the question in the frame
+    line_idx, start, end = (9, 85, 135)
+    max_length = end - start
+    question_text = въпрос['въпрос']
+
+    if len(question_text) > max_length:
+        # Split the question into two parts
+        mid = len(question_text) // 2
+        part1 = question_text[:mid]
+        part2 = question_text[mid:]
+
+        # Center and pad each part
+        part1_chars = list(part1.center(max_length).ljust(max_length))
+        part2_chars = list(part2.center(max_length).ljust(max_length))
+
+        # Update the frame with the first part of the question
+        question_line = list(frame[line_idx])
+        question_line[start:end] = part1_chars
+        frame[line_idx] = ''.join(question_line)
+
+        # Update the frame with the second part of the question (on the next line)
+        question_line = list(frame[line_idx + 1])  # Use the next line
+        question_line[start:end] = part2_chars
+        frame[line_idx + 1] = ''.join(question_line)
+    else:
+        # If the question fits in one line, center and pad it
+        question_chars = list(question_text.center(max_length).ljust(max_length))
+        question_line = list(frame[line_idx])
+        question_line[start:end] = question_chars
+        frame[line_idx] = ''.join(question_line)
+
+    # Show initial frame with question
     os.system('cls' if os.name == 'nt' else 'clear')
-    #print(f"\nВъпрос за {текуща_награда} | Категория: {въпрос['категория']}")
-    print(f"\nВъпрос за {текуща_награда}")
-    
-    if speak:
+    print_centered(f"Въпрос за {текуща_награда}")
+    print_centered("=" * (len(текуща_награда) + 10))
+    print()
+    print('\n'.join(frame))
+
+    # TTS for the question
+    if speak and USE_TTS:
         говори(f"Въпрос за {текуща_награда}")
-    print("\n" + въпрос['въпрос'])
-    if speak:
         говори(въпрос['въпрос'])
-    for буква, текст in отговори.items():
-        print(f"{буква}) {текст}")
-        if speak:
-            bg_letter = LATIN_TO_BG_SPEECH.get(буква, буква)
-            говори(f"{bg_letter}) {текст}")
+
+    # Define answer positions
+    answer_positions = [
+        ('A', 20, 35, 90),
+        ('B', 20, 150, 180),
+        ('C', 30, 35, 90),
+        ('D', 30, 150, 180)
+    ]
+
+    # Update answers in the frame
+    for key, line_idx, start, end in answer_positions:
+        if key in отговори:  # Only process existing answers
+            answer_line = list(frame[line_idx])
+            answer_text = f"{key}) {отговори[key]}"
+            answer_chars = list(answer_text.ljust(end - start - 1))
+            answer_line[start:end] = answer_chars
+            frame[line_idx] = ''.join(answer_line)
+
+            # Redraw the frame
+            os.system('cls' if os.name == 'nt' else 'clear')
+            print_centered(f"Въпрос за {текуща_награда}")
+            print_centered("=" * (len(текуща_награда) + 10))
+            print()
+            print('\n'.join(frame))
+
+            # TTS for the answer
+            if speak and USE_TTS:
+                bg_letter = LATIN_TO_BG_SPEECH.get(key, key)
+                говори(f"{bg_letter}) {отговори[key]}")
 
 def получи_отговор(отговори):
     while True:
-        избор = input("Вашият отговор (A, B, C или D): ").strip().upper()
+        избор = input("\nВашият отговор (A, B, C или D): ").strip().upper()
         if избор in отговори:
             return избор
         print("Невалиден избор. Моля изберете A, B, C или D.")
 
 def стартирай_игра():
     global USE_TTS
-    USE_TTS = check_internet()
+    load_sound_config()
     
     os.system('cls' if os.name == 'nt' else 'clear')
     print_centered("\nДОБРЕ ДОШЛИ В СТАНИ БОГАТ!")
@@ -481,13 +514,12 @@ def стартирай_игра():
     if USE_TTS:
         говори("Добре дошли на стола на богатството!")
     else:
-        print("Режим без звук активиран")
-        time.sleep(1)
+        print("Режим без звук")
 
     защитено_ниво = None
     помощници = ПОМОЩНИЦИ.copy()
 
-    for индекс, въпрос in enumerate(предварителни_въпроси()):
+    for въпрос in предварителни_въпроси():
         текуща_награда = въпрос['награда']
         трудност = НИВА_НА_ТРУДНОСТ[текуща_награда]
         отговори = въпрос['отговори'].copy()
@@ -496,19 +528,19 @@ def стартирай_игра():
         while True:
             display_question(въпрос, текуща_награда, отговори, speak=initial_display)
             initial_display = False
-
-            user_input = input("\nВъведете A,B,C или D (или натиснете Enter за да изберете жокер): ").strip().upper()
+            
+            user_input = input("\nВъведете отговор или Enter за жокер: ").strip().upper()
 
             if user_input in отговори:
                 избор = user_input
                 break
             elif user_input == '' and помощници:
                 използвай_помощник(помощници, въпрос['верен'], отговори, трудност)
-                display_question(въпрос, текуща_награда, отговори, speak=False)
+                #display_question(въпрос, текуща_награда, отговори, speak=False)
             else:
-                print("Невалиден избор, моля опитайте отново.")
+                print("Невалиден избор, опитайте отново.")
                 time.sleep(1)
-                display_question(въпрос, текуща_награда, отговори, speak=False)
+                #display_question(въпрос, текуща_награда, отговори, speak=False)
 
         if избор == въпрос['верен']:
             print(f"\nВЯРНО! Печелите {текуща_награда}!")
@@ -529,7 +561,7 @@ def стартирай_игра():
 
         time.sleep(2)
 
-    print_centered("\n !!! СПЕЧЕЛИХТЕ ГОЛЯМАТА НАГРАДА ОТ 100 000 ЛЕВА !!!")
+    print_centered("\n!!! СПЕЧЕЛИХТЕ ГОЛЯМАТА НАГРАДА ОТ 100 000 ЛЕВА !!!")
     говори("Невероятно! Вие спечелихте 100000 лева!")
 
 if __name__ == "__main__":
@@ -541,7 +573,7 @@ if __name__ == "__main__":
             contents = file.read()
             print_centered(contents)
         
-        print_centered("\nНатиснете: [Enter] Нова игра | [X] Нулирай въпроси | [C] Настройки | [Друг клавиш] Изход")
+        print_centered("\n[Enter] Нова игра | [X] Нулирай въпроси | [C] Настройки | [Друг клавиш] Изход")
         избор = input().strip().upper()
 
         if избор == 'X':
@@ -549,40 +581,38 @@ if __name__ == "__main__":
             save_history()
             GENERATED_QUESTIONS.clear()
             save_generated_questions()
+            FACT_CHECK_CACHE.clear()
             print_centered("\nВсички въпроси са нулирани!")
-            говори("Въпросите са изчистени успешно!")
-            time.sleep(2)
+            time.sleep(1.5)
         
         elif избор == 'C':
             print("\nНастройки:")
-            print("[M] Включи звук")
-            print("[N] Изключи звук")
+            print("[M] Преключване на звука")
             print("[Друг клавиш] Назад")
             sub_choice = input("Избор: ").strip().upper()
             
             if sub_choice == 'M':
-                USE_TTS = True
-                FORCE_NETWORK_OFF = False
+                USE_TTS = not USE_TTS
+                if USE_TTS:
+                    FORCE_NETWORK_OFF = False
+                else:
+                    FORCE_NETWORK_OFF = True
                 save_sound_config()
-                print_centered("\nЗвукът е включен")
-                говори("Звукът е включен")
-                time.sleep(1)
-            
-            elif sub_choice == 'N':
-                USE_TTS = False
-                FORCE_NETWORK_OFF = True
-                save_sound_config()
-                print_centered("\nЗвукът изключен")
+                status = "включен" if USE_TTS else "изключен"
+                print_centered(f"\nЗвукът е {status}")
+                if USE_TTS:
+                    говори(f"Звукът е {status}")
                 time.sleep(1)
         
         elif избор == '':
             стартирай_игра()
-            print_centered("\nНатиснете: [Enter] Към главното меню | [Друг клавиш] Изход")
+            print_centered("\n[Enter] Към меню | [Друг клавиш] Изход")
             game_choice = input().strip().upper()
             if game_choice != '':
                 break
         
         else:
             print_centered("\nБлагодарим за участието! До скоро!")
-            говори("Довиждане!")
+            if USE_TTS:
+                говори("Довиждане!")
             break

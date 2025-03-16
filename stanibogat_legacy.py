@@ -25,10 +25,10 @@ except:
     nltk.download('omw-1.4')
     from nltk.corpus import wordnet
 
-SOUND_TOGGLE_FILE = "sound_config.json"
+SOUND_TOGGLE_FILE = "sound_config_legacy.json"
 FORCE_NETWORK_OFF = False
-QUESTION_HISTORY_FILE = "question_history.json"
-QUESTIONS_FILE = "questions.json"
+QUESTION_HISTORY_FILE = "question_history_legacy.json"
+QUESTIONS_FILE = "questions_legacy.json"
 FACT_CHECK_CACHE = {}
 
 def load_history():
@@ -530,6 +530,7 @@ if __name__ == "__main__":
             save_history()
             GENERATED_QUESTIONS.clear()
             save_generated_questions()
+            FACT_CHECK_CACHE.clear()
             print_centered("\nВсички въпроси са нулирани!")
             time.sleep(1.5)
         
